@@ -2,8 +2,8 @@
 name: Software Design Issue
 about: This issue details the plan for a new software product in accordance with CliMA's Software Design Review Policy.
 title: Enter the Product Title Here
-labels: 'SDI'
-assignees: 'cmbengue simonbyrne'
+labels: "SDI"
+assignees: ["cmbengue","simonbyrne"]
 ---
 
 ## Purpose
