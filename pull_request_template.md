@@ -16,9 +16,8 @@
 - [ ] I have followed CliMA's codebase [contribution](https://clima.github.io/ClimateMachine.jl/latest/Contributing/) and [style](https://clima.github.io/ClimateMachine.jl/latest/DevDocs/CodeStyle/) guidelines OR N/A.
 - [ ] I have followed CliMA's [documentation policy](https://github.com/CliMA/policies/wiki/Documentation-Policy).
 - [ ] I have checked all issues and PRs and I certify that this PR does not duplicate an open PR.
-- [ ] I linted my code on my local machine prior to submission OR N/A.
 - [ ] Unit tests are included OR N/A.
 - [ ] Code used in an integration test OR N/A.
 - [ ] All tests ran successfully on my local machine OR N/A.
-- [ ] All classes, modules, and function contain docstrings OR N/A.
+- [ ] All classes, modules, and function contain appropriate docstrings OR N/A.
 - [ ] Documentation has been added/updated OR N/A.
