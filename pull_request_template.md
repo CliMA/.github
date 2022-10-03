@@ -6,10 +6,10 @@
 
 ## To-do
 <!---  list of proposed tasks in the PR, move to "Content" on completion -->
-- Proposed task 1
+- Proposed task
 
 ## Content
-<!---  (specific tasks that are currently complete) -->
+<!---  specific tasks that are currently complete -->
 - Solution implemented
 
 <!---
