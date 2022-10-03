@@ -10,7 +10,7 @@
 
 ## Content
 <!---  (specific tasks that are currently complete) -->
-- created get/set methods for MyStruct
+- Solution implemented
 
 <!---
 Review checklist
