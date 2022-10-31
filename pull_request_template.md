@@ -34,4 +34,4 @@ In the Content, I have included
 -->
 
 ----
-- [ ] I certify that I have read the review checklist and complied accordingly.
+- [ ] I have read and checked the items on the review checklist.
