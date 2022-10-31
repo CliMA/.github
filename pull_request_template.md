@@ -29,6 +29,9 @@ I have:
 
 In the Content, I have included 
 - relevant unit tests, and integration tests, 
-- appropriate docstrings on all functions, structs, and modules, and included relevent documentation.
+- appropriate docstrings on all functions, structs, and modules, and included relevant documentation.
 
 -->
+
+----
+- [ ] I have read and checked the items on the review checklist.
