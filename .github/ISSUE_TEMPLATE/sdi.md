@@ -1,36 +1,48 @@
 ---
 name: Software Design Issue
-about: This issue details the plan for a new software product in accordance with CliMA's Software Design Review Policy.
+about: This issue details the plan for a new software product in accordance with CliMA's Code Development Best Practices and Policies.
 title: Enter the Product Title Here
-labels: "SDI"
-assignees: ["cmbengue","simonbyrne","tapios"]
+labels: 'SDI'
 ---
+# The Climate Modeling Alliance
+## Software Design Issue 📜
+### Purpose
+<!--- State concisely the purpose of this software product. What are the goals and objectives? -->
 
-## Purpose
-(State the purpose of this software product. What are the overall goals and objectives)
+### Cost/Benefits/Risks
+<!--- Analyze the cost/benefits/risks associated with the proposal. -->
 
-## Cost/Benefits/Risks
-(Analyze the cost/benefits/risks associated with the proposal)
-
-## People and Personnel
-(@ the personnel required/requested to implement the software solution)
+### People and Personnel
+<!--- @ the personnel required/requested to implement the software solution.
 - Lead:
 - Collaborators:
-- Reviewers:
+- Reviewers: -->
 
-## Components
-(Describe the main components of the software solution)
+### Components
+<!--- Describe the main components of the software solution. -->
 
-## Inputs
-(Describe the inputs to the software solution)
+### Inputs
+<!--- Describe the inputs to the software solution. -->
 
-## Results and deliverables
-(Summarize of the key results, deliverables, quality expectations, and performance metrics)
+### Results and deliverables
+<!--- Describe the key results, deliverables, quality expectations, and performance metrics. -->
 
-## Task Breakdown And Tentative Due Date
-(A preliminary list of PRs and a preliminary timeline of PRs, milestones, and key results)
-- [ ] Child Issue #1
-- [ ] Child Issue #2
+### Task Breakdown And Tentative Due Date
+<!--- A preliminary list of PRs and a preliminary timeline of PRs, milestones, and key results.
+- [ ] Task/PR 1
+- [ ] Task/PR 2 -->
 
-## Proposed Delivery Date
-(Your best estimate of the date this software solution will be completed)
+### Proposed Delivery Date
+<!--- Estimate the delivery of interim products and the final product.  
+- Delivery Date: YYYY-MM-DD
+-->
+
+***
+### Metadata
+- Proposed by:
+- Proposal date:
+- Approved by:
+- Approval date:
+
+### CC
+@tapios @simonbyrne @cmbengue
