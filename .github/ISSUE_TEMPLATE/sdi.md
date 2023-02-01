@@ -24,13 +24,16 @@ assignees: ["cmbengue","simonbyrne","tapios"]
 ## Inputs
 (Describe the inputs to the software solution)
 
-## Results and deliverables
+## Results and Deliverables
 (Summarize of the key results, deliverables, quality expectations, and performance metrics)
 
 ## Task Breakdown And Tentative Due Date
 (A preliminary list of PRs and a preliminary timeline of PRs, milestones, and key results)
 - [ ] Child Issue #1
 - [ ] Child Issue #2
+
+## SDI Revision Log
+(State the reason for revision and indicate who approved it)
 
 ## Proposed Delivery Date
 (Your best estimate of the date this software solution will be completed)
