@@ -7,29 +7,29 @@ labels: 'SDI'
 # The Climate Modeling Alliance
 ## Software Design Issue 📜
 ### Purpose
-<!--- State concisely the purpose of this software product. What are the goals and objectives? 
+<!-- State concisely the purpose of this software product. What are the goals and objectives? 
 What problem is being solved? What are the requirements? What is your approach? -->
 
 ### Cost/Benefits/Risks
-<!--- Analyze the cost/benefits/risks associated with the proposal. -->
+<!-- Analyze the cost/benefits/risks associated with the proposal. -->
 
 ### People and Personnel
-<!--- @ the personnel required/requested to implement the software solution.
+<!-- @ the personnel required/requested to implement the software solution.
 - Lead:
 - Collaborators:
 - Reviewers: -->
 
 ### Components
-<!--- Describe the main components/composition of the software solution. -->
+<!-- Describe the main components/composition of the software solution. -->
 
 ### Inputs
-<!--- Describe the inputs to the software solution. -->
+<!-- Describe the inputs to the software solution. -->
 
 ### Results and Deliverables
-<!--- Describe the key results, deliverables, quality expectations, and performance metrics. -->
+<!-- Describe the key results, deliverables, quality expectations, and performance metrics. -->
 
 ### Task Breakdown And Schedule
-<!--- A preliminary list of PRs and a preliminary timeline of PRs, milestones, and key results.
+<!-- A preliminary list of PRs and a preliminary timeline of PRs, milestones, and key results.
 - [ ] Task/PR 1
 - [ ] Task/PR 2 -->
 
