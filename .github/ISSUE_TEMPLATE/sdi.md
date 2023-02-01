@@ -19,30 +19,21 @@ labels: 'SDI'
 - Reviewers: -->
 
 ### Components
-<!--- Describe the main components of the software solution. -->
+<!--- Describe the main components/composition of the software solution. -->
 
 ### Inputs
 <!--- Describe the inputs to the software solution. -->
 
-### Results and deliverables
+### Results and Deliverables
 <!--- Describe the key results, deliverables, quality expectations, and performance metrics. -->
 
-### Task Breakdown And Tentative Due Date
+### Task Breakdown And Schedule
 <!--- A preliminary list of PRs and a preliminary timeline of PRs, milestones, and key results.
 - [ ] Task/PR 1
 - [ ] Task/PR 2 -->
 
-### Proposed Delivery Date
-<!--- Estimate the delivery of interim products and the final product.  
-- Delivery Date: YYYY-MM-DD
--->
-
-***
-### Metadata
-- Proposed by:
-- Proposal date:
-- Approved by:
-- Approval date:
+### SDI Revision Log
+<!-- State the reason for revision and indicate who approved it -->
 
 ### CC
 @tapios @simonbyrne @cmbengue
