@@ -7,7 +7,8 @@ labels: 'SDI'
 # The Climate Modeling Alliance
 ## Software Design Issue 📜
 ### Purpose
-<!--- State concisely the purpose of this software product. What are the goals and objectives? -->
+<!--- State concisely the purpose of this software product. What are the goals and objectives? 
+What problem is being solved? What are the requirements? What is your approach? -->
 
 ### Cost/Benefits/Risks
 <!--- Analyze the cost/benefits/risks associated with the proposal. -->
