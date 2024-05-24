@@ -1,6 +1,6 @@
 ---
 name: Software Design Issue
-about: This issue details the plan for a new software product in accordance with CliMA's Code Development Best Practices and Policies.
+description: This issue details the plan for a new software product in accordance with CliMA's Code Development Best Practices and Policies.
 title: Enter the Product Title Here
 labels: 'SDI'
 ---
@@ -28,13 +28,17 @@ What problem is being solved? What are the requirements? What is your approach? 
 ### Results and Deliverables
 <!-- Describe the key results, deliverables, quality expectations, and performance metrics. -->
 
-### Task Breakdown And Schedule
-<!-- A preliminary list of PRs and a preliminary timeline of PRs, milestones, and key results.
-- [ ] Task/PR 1
-- [ ] Task/PR 2 -->
+### Scope of Work
+<!-- A preliminary list of tasks to accomplish this SDI.
+-->
+
+```[tasklist]
+### Tasks
+- [ ] Complete SDI
+```
 
 ### SDI Revision Log
-<!-- State the reason for revision and indicate who approved it -->
+<!-- State, sign, and date the reason for revision  -->
 
 ### CC
-@tapios @simonbyrne @cmbengue
+@tapios @sriharshakandala @charleskawczynski @cmbengue
