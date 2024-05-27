@@ -1,6 +1,6 @@
 ---
 name: Software Design Issue
-description: This issue details the plan for a new software product in accordance with CliMA's Code Development Best Practices and Policies.
+about: This issue details the plan for a new software product in accordance with CliMA's Code Development Best Practices and Policies.
 title: Enter the Product Title Here
 labels: 'SDI'
 ---
