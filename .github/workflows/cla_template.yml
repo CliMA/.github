@@ -1,0 +1,205 @@
+---
+name: CLA Template
+
+on:
+  workflow_call:
+
+jobs:
+  checker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RPAT }}
+
+      - name: Determine contributors and CLA status
+        id: cla_check
+        uses: actions/github-script@v8
+        env:
+          CLA_API_URL: ${{ secrets.CLA_API_URL }}
+          CLA_API_TOKEN: ${{ secrets.CLA_API_TOKEN }}
+          CLA_ORG_TOKEN: ${{ secrets.RPAT }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const association = pr.author_association;
+            const claApiUrl = process.env.CLA_API_URL;
+            const claToken = process.env.CLA_API_TOKEN;
+            const org = process.env.CLA_ORG || context.repo.owner;
+            const orgToken = process.env.CLA_ORG_TOKEN;
+            const orgGithub = orgToken ? new github.constructor({ auth: orgToken }) : github;
+            core.info(`Using org context: ${org}${orgToken ? " (token from CLA_ORG_TOKEN)" : " (default github-token)"}`);
+            const teamNames = ["Caltech Employees", "MIT Employees", "JPL Employees"];
+            const teamMembers = {};
+
+            const fetchTeamMembers = async (teamSlug, teamName) => {
+              try {
+                const members = [];
+                const iterator = orgGithub.paginate.iterator(
+                  orgGithub.rest.teams.listMembersInOrg,
+                  { org, team_slug: teamSlug, per_page: 100 }
+                );
+                for await (const { data } of iterator) {
+                  for (const member of data) {
+                    members.push(member.login);
+                  }
+                }
+                return members;
+              } catch (error) {
+                const message = error?.response?.data?.message || error.message;
+                core.warning(`Failed to list members for ${teamName}: status ${error.status}, message: ${message}`);
+                return [];
+              }
+            };
+
+            const orgMembershipStatus = async (username) => {
+              try {
+                const res = await orgGithub.rest.orgs.checkMembershipForUser({
+                  org,
+                  username,
+                });
+                core.info(`Org membership check for ${username}: status ${res.status}`);
+                return true;
+              } catch (error) {
+                const message = error?.response?.data?.message || error.message;
+                core.info(`Org membership check failed for ${username}: status ${error.status}, message: ${message}`);
+                return false;
+              }
+            };
+
+            const isMemberOfAllowedTeams = async (username) => {
+              for (const teamName of teamNames) {
+                const teamSlug = teamName.trim().toLowerCase().replace(/\s+/g, "-");
+                core.info(`Checking team membership for ${username} in "${teamName}" (slug: ${teamSlug})`);
+                if (!teamMembers[teamName]) {
+                  teamMembers[teamName] = await fetchTeamMembers(teamSlug, teamName);
+                }
+                if (teamMembers[teamName].includes(username)) {
+                  core.info(`User ${username} found in fetched member list for ${teamName}`);
+                  return true;
+                }
+                try {
+                  const res = await orgGithub.rest.teams.getMembershipForUserInOrg({
+                    org,
+                    team_slug: teamSlug,
+                    username,
+                  });
+                  core.info(`Team lookup response for ${teamName}: status ${res.status}, membership state ${res?.data?.state}`);
+                  if (res?.data?.state === "active") {
+                    return true;
+                  }
+                  core.info(`User ${username} exists but is not active in ${teamName}`);
+                } catch (error) {
+                  const message = error?.response?.data?.message || error.message;
+                  if (error.status === 404) {
+                    core.info(`User ${username} is not a member of ${teamName} (404)`);
+                  } else {
+                    core.warning(`Team lookup failed for ${teamName}: status ${error.status}, message: ${message}`);
+                  }
+                }
+              }
+              return false;
+            };
+
+            let outsideContributors = [];
+            const isOrgMember = await orgMembershipStatus(author);
+            const isInternal = await isMemberOfAllowedTeams(author);
+            core.info(`Author: ${author}`);
+            core.info(`Author association: ${association}`);
+            core.info(`Author is member of allowed teams: ${isInternal}`);
+            core.info(`Author is member of org (${org}): ${isOrgMember}`);
+            if (!isInternal) {
+              outsideContributors.push(author);
+            }
+            const uniqueContributors = [...new Set(outsideContributors)];
+            const missingCLA = [];
+            const claStatuses = [];
+            for (const user of uniqueContributors) {
+              const url = new URL(claApiUrl);
+              url.searchParams.append('github_username', user);
+              const res = await fetch(url.toString(), {
+                headers: {
+                  'X-CLA-Token': claToken
+                }
+              });
+
+            if (!res.ok) {
+              core.setFailed(`CLA API error for ${user}: ${res.status} ${res.statusText}`);
+              return;
+            }
+
+              const data = await res.json();
+              claStatuses.push({ user, has_cla: data.has_cla });
+              core.info(`CLA status for ${user}: ${data.has_cla ? "signed" : "missing"}`);
+
+              if (!data.has_cla) {
+                missingCLA.push(user);
+              }
+            }
+
+            core.info(`Checked contributors: ${uniqueContributors.join(", ") || "none"}`);
+            core.info(`Missing CLA: ${missingCLA.join(", ") || "none"}`);
+            core.setOutput('team_names', JSON.stringify(teamNames));
+            core.setOutput('org_member', isOrgMember ? 'yes' : 'no');
+            core.setOutput('team_members', JSON.stringify(teamMembers));
+            core.setOutput('org_used', org);
+
+            core.setOutput('author', author);
+            core.setOutput('is_internal', isInternal ? 'yes' : 'no');
+            core.setOutput('checked_contributors', JSON.stringify(uniqueContributors));
+            core.setOutput('cla_statuses', JSON.stringify(claStatuses));
+            core.setOutput('missing_cla', JSON.stringify(missingCLA));
+
+            if (missingCLA.length > 0) {
+              core.setFailed('Missing CLA for some contributors');
+            }
+
+      - name: Comment on PR if missing CLA
+        if: failure() && steps.cla_check.outputs.missing_cla != '[]'
+        uses: actions/github-script@v8
+        env:
+          MISSING_CLA: ${{ steps.cla_check.outputs.missing_cla }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const missingCLA = JSON.parse(process.env.MISSING_CLA || '[]');
+            const prNumber = context.payload.pull_request.number;
+            const claUrl = 'https://ecodesign.clima.caltech.edu/cla/';
+
+            const lines = [];
+            lines.push('⚠️ **Contributor License Agreement required**');
+            lines.push('');
+            lines.push('The following contributors must sign the CLA before this PR can be merged:');
+            lines.push('');
+            for (const user of missingCLA) {
+              lines.push(`- @${user}`);
+            }
+            lines.push('');
+            lines.push(`Please visit ${claUrl} to review and upload the signed CLA.`);
+            lines.push('');
+            lines.push('_Once completed, re-run the checks on this PR._');
+
+            const body = lines.join('\n');
+
+            await github.rest.pulls.createReview({
+              ...context.repo,
+              pull_number: prNumber,
+              event: 'COMMENT',
+              body
+            });
+
+      - name: Workflow progress summary
+        if: always()
+        run: |
+          echo "## CLA workflow progress" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Author: ${{ steps.cla_check.outputs.author }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Org used: ${{ steps.cla_check.outputs.org_used }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Org member: ${{ steps.cla_check.outputs.org_member }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Checked contributors: ${{ steps.cla_check.outputs.checked_contributors }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Missing CLA: ${{ steps.cla_check.outputs.missing_cla }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Allowed teams: ${{ steps.cla_check.outputs.team_names }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Outcome: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
