@@ -32,9 +32,9 @@ permissions:
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-  branches:
-    - main
-    - master
+    branches:
+      - main
+      - master
 
 jobs:
   cla:
