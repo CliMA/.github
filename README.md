@@ -14,6 +14,7 @@ This organization uses a centralized reusable GitHub Actions workflow to verify 
 
 ``` shell
 cd /path/to/repository/
+mkdir -p .github/workflows
 touch .github/workflows/cla.yml
 ```
 
@@ -32,9 +33,9 @@ permissions:
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-  branches:
-    - main
-    - master
+    branches:
+      - main
+      - master
 
 jobs:
   cla:
