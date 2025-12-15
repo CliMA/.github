@@ -144,7 +144,6 @@ jobs:
               if (!res.ok) {
                 throw new Error(`CLA API error for ${user}: ${res.status} ${res.statusText}`);
               }
-
               const data = await res.json();
               core.info(`CLA status for ${user}: ${data.has_cla ? "signed" : "missing"}`);
               return data.has_cla;
