@@ -26,7 +26,6 @@ jobs:
           script: |
             const pr = context.payload.pull_request;
             const author = pr.user.login;
-            const association = pr.author_association;
             const claApiUrl = process.env.CLA_API_URL;
             const claToken = process.env.CLA_API_TOKEN;
             const org = process.env.CLA_ORG || context.repo.owner;
