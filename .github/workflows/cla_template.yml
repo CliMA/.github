@@ -32,9 +32,11 @@ jobs:
             const org = process.env.CLA_ORG || context.repo.owner;
             const orgToken = process.env.CLA_ORG_TOKEN;
             const orgGithub = orgToken ? new github.constructor({ auth: orgToken }) : github;
+            const prNumber = pr.number;
             core.info(`Using org context: ${org}${orgToken ? " (token from CLA_ORG_TOKEN)" : " (default github-token)"}`);
             const teamNames = ["Caltech Employees", "MIT Employees", "JPL Employees"];
             const teamMembers = {};
+            const ignoredUsers = new Set(["web-flow"]);
 
             const fetchTeamMembers = async (teamSlug, teamName) => {
               try {
@@ -105,51 +107,90 @@ jobs:
               return false;
             };
 
-            let outsideContributors = [];
-            const isOrgMember = await orgMembershipStatus(author);
-            const isInternal = await isMemberOfAllowedTeams(author);
-            core.info(`Author: ${author}`);
-            core.info(`Author association: ${association}`);
-            core.info(`Author is member of allowed teams: ${isInternal}`);
-            core.info(`Author is member of org (${org}): ${isOrgMember}`);
-            if (!isInternal) {
-              outsideContributors.push(author);
-            }
-            const uniqueContributors = [...new Set(outsideContributors)];
-            const missingCLA = [];
-            const claStatuses = [];
-            for (const user of uniqueContributors) {
+            const addUser = (set, username, source) => {
+              if (!username) {
+                return;
+              }
+              if (ignoredUsers.has(username) || username.endsWith("[bot]")) {
+                core.info(`Skipping ignored/bot user ${username} from ${source}`);
+                return;
+              }
+              set.add(username);
+            };
+
+            const collectCommitters = async () => {
+              const committers = new Set();
+              addUser(committers, author, "PR author");
+              const iterator = github.paginate.iterator(
+                github.rest.pulls.listCommits,
+                { owner: context.repo.owner, repo: context.repo.repo, pull_number: prNumber, per_page: 100 }
+              );
+              for await (const { data } of iterator) {
+                for (const commit of data) {
+                  addUser(committers, commit.author?.login, "commit.author");
+                  addUser(committers, commit.committer?.login, "commit.committer");
+                }
+              }
+              return Array.from(committers);
+            };
+
+            const fetchClaStatus = async (user) => {
               const url = new URL(claApiUrl);
-              url.searchParams.append('github_username', user);
+              url.searchParams.append("github_username", user);
               const res = await fetch(url.toString(), {
                 headers: {
-                  'X-CLA-Token': claToken
+                  "X-CLA-Token": claToken
                 }
               });
-
-            if (!res.ok) {
-              core.setFailed(`CLA API error for ${user}: ${res.status} ${res.statusText}`);
-              return;
-            }
+              if (!res.ok) {
+                throw new Error(`CLA API error for ${user}: ${res.status} ${res.statusText}`);
+              }
 
               const data = await res.json();
-              claStatuses.push({ user, has_cla: data.has_cla });
               core.info(`CLA status for ${user}: ${data.has_cla ? "signed" : "missing"}`);
+              return data.has_cla;
+            };
 
-              if (!data.has_cla) {
+            const uniqueContributors = await collectCommitters();
+            const missingCLA = [];
+            const claStatuses = [];
+
+            core.info(`Committers found: ${uniqueContributors.join(", ") || "none"}`);
+
+            for (const user of uniqueContributors) {
+              const isOrgMember = await orgMembershipStatus(user);
+              const isInternal = await isMemberOfAllowedTeams(user);
+              let hasCLA = false;
+
+              if (isInternal) {
+                hasCLA = true;
+                core.info(`User ${user} is internal; CLA not required`);
+              } else {
+                try {
+                  hasCLA = await fetchClaStatus(user);
+                } catch (error) {
+                  core.setFailed(error.message);
+                  return;
+                }
+              }
+
+              if (!isInternal && !hasCLA) {
                 missingCLA.push(user);
               }
+              claStatuses.push({
+                user,
+                is_internal: isInternal,
+                is_org_member: isOrgMember,
+                has_cla: hasCLA
+              });
             }
 
             core.info(`Checked contributors: ${uniqueContributors.join(", ") || "none"}`);
             core.info(`Missing CLA: ${missingCLA.join(", ") || "none"}`);
             core.setOutput('team_names', JSON.stringify(teamNames));
-            core.setOutput('org_member', isOrgMember ? 'yes' : 'no');
             core.setOutput('team_members', JSON.stringify(teamMembers));
             core.setOutput('org_used', org);
-
             core.setOutput('author', author);
-            core.setOutput('is_internal', isInternal ? 'yes' : 'no');
             core.setOutput('checked_contributors', JSON.stringify(uniqueContributors));
             core.setOutput('cla_statuses', JSON.stringify(claStatuses));
             core.setOutput('missing_cla', JSON.stringify(missingCLA));
@@ -195,11 +236,12 @@ jobs:
       - name: Workflow progress summary
         if: always()
         run: |
-          echo "## CLA workflow progress" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Author: ${{ steps.cla_check.outputs.author }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Org used: ${{ steps.cla_check.outputs.org_used }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Org member: ${{ steps.cla_check.outputs.org_member }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Checked contributors: ${{ steps.cla_check.outputs.checked_contributors }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Missing CLA: ${{ steps.cla_check.outputs.missing_cla }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Allowed teams: ${{ steps.cla_check.outputs.team_names }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Outcome: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## CLA workflow progress"
+            echo "- Author: ${{ steps.cla_check.outputs.author }}"
+            echo "- Org used: ${{ steps.cla_check.outputs.org_used }}"
+            echo "- Checked contributors: ${{ steps.cla_check.outputs.checked_contributors }}"
+            echo "- Missing CLA: ${{ steps.cla_check.outputs.missing_cla }}"
+            echo "- Allowed teams: ${{ steps.cla_check.outputs.team_names }}"
+            echo "- Outcome: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
