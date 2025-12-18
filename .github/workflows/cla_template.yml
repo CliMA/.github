@@ -35,8 +35,15 @@ jobs:
             core.info(`Using org context: ${org}${orgToken ? " (token from CLA_ORG_TOKEN)" : " (default github-token)"}`);
             const teamNames = ["Caltech Employees", "MIT Employees", "JPL Employees"];
             const teamMembers = {};
-            const ignoredUsers = new Set(["web-flow"]);
-
+            const ignoredUsers = new Set([
+              "web-flow",
+              "github-actions[bot]",
+              "dependabot[bot]",
+            ]);
+            if (ignoredUsers.has(author) || author.endsWith("[bot]")) {
+              core.info(`Skipping CLA check for system user: ${author}`);
+              return;
+            }
             const fetchTeamMembers = async (teamSlug, teamName) => {
               try {
                 const members = [];
