@@ -31,6 +31,7 @@ permissions:
   pull-requests: write
 
 on:
+  merge_group:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
