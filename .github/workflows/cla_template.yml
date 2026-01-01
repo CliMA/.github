@@ -24,6 +24,19 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            if (context.eventName === "merge_group" || context.payload.merge_group) {
+              core.info("Merge group event detected; skipping CLA checks.");
+              core.setOutput('author', 'merge_group');
+              core.setOutput('is_internal', 'yes');
+              core.setOutput('org_member', 'yes');
+              core.setOutput('checked_contributors', JSON.stringify([]));
+              core.setOutput('cla_statuses', JSON.stringify([]));
+              core.setOutput('missing_cla', JSON.stringify([]));
+              core.setOutput('team_names', JSON.stringify([]));
+              core.setOutput('team_members', JSON.stringify({}));
+              core.setOutput('org_used', process.env.CLA_ORG || context.repo.owner);
+              return;
+            }
             const pr = context.payload.pull_request;
             const author = pr.user.login;
             const claApiUrl = process.env.CLA_API_URL;
