@@ -41,5 +41,5 @@ on:
 jobs:
   cla:
     uses: clima/.github/.github/workflows/cla_template.yml@main
-      secrets: inherit
+    secrets: inherit
 ```
