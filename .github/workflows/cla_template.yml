@@ -238,7 +238,9 @@ jobs:
               lines.push(`- @${user}`);
             }
             lines.push('');
-            lines.push(`Please visit ${claUrl} to review and upload the signed CLA.`);
+            lines.push(`Please visit ${claUrl} to review and sign the CLA.`);
+            lines.push('');
+            lines.push('**How to sign:** Authenticate with GitHub then click the "I agree" button.');
             lines.push('');
             lines.push('_Once completed, re-run the checks on this PR._');
 
