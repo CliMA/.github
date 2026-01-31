@@ -9,11 +9,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repo
-        uses: actions/checkout@v6
-        with:
-          token: ${{ secrets.RPAT }}
-
       - name: Determine contributors and CLA status
         id: cla_check
         uses: actions/github-script@v8
@@ -21,6 +16,7 @@ jobs:
           CLA_API_URL: ${{ secrets.CLA_API_URL }}
           CLA_API_TOKEN: ${{ secrets.CLA_API_TOKEN }}
           CLA_ORG_TOKEN: ${{ secrets.RPAT }}
+          CLA_EFFECTIVE_DATE: ${{ secrets.CLA_EFFECTIVE_DATE }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -43,9 +39,30 @@ jobs:
             const claToken = process.env.CLA_API_TOKEN;
             const org = process.env.CLA_ORG || context.repo.owner;
             const orgToken = process.env.CLA_ORG_TOKEN;
+            if (!process.env.CLA_EFFECTIVE_DATE) {
+              core.setOutput('skip_cla_comment', 'yes');
+              core.setOutput('missing_cla', JSON.stringify([]));
+              core.setOutput('checked_contributors', JSON.stringify([]));
+              core.setOutput('cla_statuses', JSON.stringify([]));
+              core.setFailed("CLA_EFFECTIVE_DATE is required but was not set.");
+              return;
+            }
+            const effectiveDateRaw = process.env.CLA_EFFECTIVE_DATE;
+            const effectiveDate = effectiveDateRaw ? new Date(effectiveDateRaw) : null;
+            if (effectiveDateRaw && (!effectiveDate || Number.isNaN(effectiveDate.getTime()))) {
+              core.setOutput('skip_cla_comment', 'yes');
+              core.setOutput('missing_cla', JSON.stringify([]));
+              core.setOutput('checked_contributors', JSON.stringify([]));
+              core.setOutput('cla_statuses', JSON.stringify([]));
+              core.setFailed(`Invalid CLA_EFFECTIVE_DATE: "${effectiveDateRaw}". Use ISO 8601 like "2026-01-01T00:00:00Z".`);
+              return;
+            }
             const orgGithub = orgToken ? new github.constructor({ auth: orgToken }) : github;
             const prNumber = pr.number;
             core.info(`Using org context: ${org}${orgToken ? " (token from CLA_ORG_TOKEN)" : " (default github-token)"}`);
+            if (effectiveDate) {
+              core.info(`CLA effective date set; checking commits on/after ${effectiveDate.toISOString()}`);
+            }
             const teamNames = ["Caltech Employees", "MIT Employees", "JPL Employees"];
             const teamMembers = {};
             const ignoredUsers = new Set([
@@ -139,16 +156,28 @@ jobs:
 
             const collectCommitters = async () => {
               const committers = new Set();
-              addUser(committers, author, "PR author");
+              let authorHasRecentCommit = false;
               const iterator = github.paginate.iterator(
                 github.rest.pulls.listCommits,
                 { owner: context.repo.owner, repo: context.repo.repo, pull_number: prNumber, per_page: 100 }
               );
               for await (const { data } of iterator) {
                 for (const commit of data) {
+                  const commitDate = commit.commit?.author?.date || commit.commit?.committer?.date;
+                  const isWithinDate = !effectiveDate || (commitDate && new Date(commitDate) >= effectiveDate);
+                  if (!isWithinDate) {
+                    core.info(`Skipping commit ${commit.sha} because it was authored before the CLA effective date threshold: ${commitDate}`);
+                    continue;
+                  }
+                  if (commit.author?.login === author || commit.committer?.login === author) {
+                    authorHasRecentCommit = true;
+                  }
                   addUser(committers, commit.author?.login, "commit.author");
                   addUser(committers, commit.committer?.login, "commit.committer");
                 }
+              }
+              if (!effectiveDate || authorHasRecentCommit) {
+                addUser(committers, author, "PR author");
               }
               return Array.from(committers);
             };
@@ -195,6 +224,7 @@ jobs:
               if (!isInternal && !hasCLA) {
                 missingCLA.push(user);
               }
+
               claStatuses.push({
                 user,
                 is_internal: isInternal,
@@ -208,17 +238,21 @@ jobs:
             core.setOutput('team_names', JSON.stringify(teamNames));
             core.setOutput('team_members', JSON.stringify(teamMembers));
             core.setOutput('org_used', org);
+
             core.setOutput('author', author);
             core.setOutput('checked_contributors', JSON.stringify(uniqueContributors));
             core.setOutput('cla_statuses', JSON.stringify(claStatuses));
             core.setOutput('missing_cla', JSON.stringify(missingCLA));
+            core.setOutput('skip_cla_comment', 'no');
+
+
 
             if (missingCLA.length > 0) {
               core.setFailed('Missing CLA for some contributors');
             }
 
       - name: Comment on PR if missing CLA
-        if: failure() && steps.cla_check.outputs.missing_cla != '[]'
+        if: failure() && steps.cla_check.outputs.missing_cla != '[]' && steps.cla_check.outputs.skip_cla_comment != 'yes'
         uses: actions/github-script@v8
         env:
           MISSING_CLA: ${{ steps.cla_check.outputs.missing_cla }}
@@ -228,11 +262,10 @@ jobs:
             const missingCLA = JSON.parse(process.env.MISSING_CLA || '[]');
             const prNumber = context.payload.pull_request.number;
             const claUrl = 'https://ecodesign.clima.caltech.edu/cla/';
-
             const lines = [];
             lines.push('⚠️ **Contributor License Agreement required**');
             lines.push('');
-            lines.push('The following contributors must sign the CLA before this PR can be merged:');
+            lines.push('The following contributor(s) must sign the CLA before this PR can be merged:');
             lines.push('');
             for (const user of missingCLA) {
               lines.push(`- @${user}`);
@@ -255,6 +288,8 @@ jobs:
 
       - name: Workflow progress summary
         if: always()
+        env:
+          CLA_EFFECTIVE_DATE: ${{ secrets.CLA_EFFECTIVE_DATE }}
         run: |
           {
             echo "## CLA workflow progress"
@@ -263,5 +298,8 @@ jobs:
             echo "- Checked contributors: ${{ steps.cla_check.outputs.checked_contributors }}"
             echo "- Missing CLA: ${{ steps.cla_check.outputs.missing_cla }}"
             echo "- Allowed teams: ${{ steps.cla_check.outputs.team_names }}"
+            if [ -z "$CLA_EFFECTIVE_DATE" ]; then
+              echo "- Note: CLA_EFFECTIVE_DATE secret is missing"
+            fi
             echo "- Outcome: ${{ job.status }}"
           } >> "$GITHUB_STEP_SUMMARY"
