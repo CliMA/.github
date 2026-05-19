@@ -67,6 +67,7 @@ jobs:
             const teamMembers = {};
             const ignoredUsers = new Set([
               "web-flow",
+              "copilot",
               "github-actions[bot]",
               "dependabot[bot]",
             ]);
