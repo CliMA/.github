@@ -31,14 +31,40 @@ jobs:
               core.setOutput('team_names', JSON.stringify([]));
               core.setOutput('team_members', JSON.stringify({}));
               core.setOutput('org_used', process.env.CLA_ORG || context.repo.owner);
+              core.setOutput('skip_cla_comment', 'yes');
               return;
             }
+
             const pr = context.payload.pull_request;
             const author = pr.user.login;
+            const org = process.env.CLA_ORG || context.repo.owner;
+
+            const ignoredUsers = new Set([
+              "web-flow",
+              "copilot",
+              "github-actions[bot]",
+              "dependabot[bot]",
+            ]);
+
+            if (ignoredUsers.has(author) || author.endsWith("[bot]")) {
+              core.info(`Skipping CLA check for system user: ${author}`);
+              core.setOutput('author', author);
+              core.setOutput('is_internal', 'yes');
+              core.setOutput('org_member', 'yes');
+              core.setOutput('checked_contributors', JSON.stringify([]));
+              core.setOutput('cla_statuses', JSON.stringify([]));
+              core.setOutput('missing_cla', JSON.stringify([]));
+              core.setOutput('team_names', JSON.stringify([]));
+              core.setOutput('team_members', JSON.stringify({}));
+              core.setOutput('org_used', org);
+              core.setOutput('skip_cla_comment', 'yes');
+              return;
+            }
+
             const claApiUrl = process.env.CLA_API_URL;
             const claToken = process.env.CLA_API_TOKEN;
-            const org = process.env.CLA_ORG || context.repo.owner;
             const orgToken = process.env.CLA_ORG_TOKEN;
+
             if (!process.env.CLA_EFFECTIVE_DATE) {
               core.setOutput('skip_cla_comment', 'yes');
               core.setOutput('missing_cla', JSON.stringify([]));
@@ -47,8 +73,10 @@ jobs:
               core.setFailed("CLA_EFFECTIVE_DATE is required but was not set.");
               return;
             }
+
             const effectiveDateRaw = process.env.CLA_EFFECTIVE_DATE;
             const effectiveDate = effectiveDateRaw ? new Date(effectiveDateRaw) : null;
+
             if (effectiveDateRaw && (!effectiveDate || Number.isNaN(effectiveDate.getTime()))) {
               core.setOutput('skip_cla_comment', 'yes');
               core.setOutput('missing_cla', JSON.stringify([]));
@@ -57,24 +85,19 @@ jobs:
               core.setFailed(`Invalid CLA_EFFECTIVE_DATE: "${effectiveDateRaw}". Use ISO 8601 like "2026-01-01T00:00:00Z".`);
               return;
             }
+
             const orgGithub = orgToken ? new github.constructor({ auth: orgToken }) : github;
             const prNumber = pr.number;
+
             core.info(`Using org context: ${org}${orgToken ? " (token from CLA_ORG_TOKEN)" : " (default github-token)"}`);
+
             if (effectiveDate) {
               core.info(`CLA effective date set; checking commits on/after ${effectiveDate.toISOString()}`);
             }
+
             const teamNames = ["Caltech Employees", "MIT Employees", "JPL Employees"];
             const teamMembers = {};
-            const ignoredUsers = new Set([
-              "web-flow",
-              "copilot",
-              "github-actions[bot]",
-              "dependabot[bot]",
-            ]);
-            if (ignoredUsers.has(author) || author.endsWith("[bot]")) {
-              core.info(`Skipping CLA check for system user: ${author}`);
-              return;
-            }
+
             const fetchTeamMembers = async (teamSlug, teamName) => {
               try {
                 const members = [];
