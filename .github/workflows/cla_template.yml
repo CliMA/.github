@@ -46,7 +46,15 @@ jobs:
               "dependabot[bot]",
             ]);
 
-            if (ignoredUsers.has(author) || author.endsWith("[bot]")) {
+            const isIgnoredUser = (username) => {
+              if (!username) {
+                return false;
+              }
+              const normalizedUsername = username.toLowerCase();
+              return ignoredUsers.has(normalizedUsername) || normalizedUsername.endsWith("[bot]");
+            };
+
+            if (isIgnoredUser(author)) {
               core.info(`Skipping CLA check for system user: ${author}`);
               core.setOutput('author', author);
               core.setOutput('is_internal', 'yes');
@@ -171,7 +179,7 @@ jobs:
               if (!username) {
                 return;
               }
-              if (ignoredUsers.has(username) || username.endsWith("[bot]")) {
+              if (isIgnoredUser(username)) {
                 core.info(`Skipping ignored/bot user ${username} from ${source}`);
                 return;
               }
